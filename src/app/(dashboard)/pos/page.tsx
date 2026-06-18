@@ -494,7 +494,7 @@ export default function POSPage() {
 
         {/* Mobile View Cart Button (Sticky Bottom) */}
         {!isMobileCartOpen && cart.items.length > 0 && (
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] lg:hidden z-30 animate-in slide-in-from-bottom-full duration-300">
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-[0_-20px_40px_rgba(0,0,0,0.15)] lg:hidden z-[100] transition-all">
             <button
               onClick={() => setIsMobileCartOpen(true)}
               className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg flex justify-between items-center px-6"
