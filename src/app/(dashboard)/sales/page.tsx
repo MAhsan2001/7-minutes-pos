@@ -10,7 +10,9 @@ import type { Sale, SaleItem } from "@/lib/types";
 import { hasPermission } from "@/lib/utils/rbac";
 import { SALE_STATUS_CONFIG, APP_NAME } from "@/lib/utils/constants";
 import { Receipt as ThermalReceipt } from "@/components/pos/Receipt";
+import { A4Invoice } from "@/components/pos/A4Invoice";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   Search,
   Receipt,
@@ -64,6 +66,7 @@ export default function SalesPage() {
 
   // Hidden receipt for reprint
   const receiptRef = useRef<HTMLDivElement>(null);
+  const a4InvoiceRef = useRef<HTMLDivElement>(null);
 
   const { profile } = useAuthStore();
   const supabase = createClient();
@@ -152,78 +155,86 @@ export default function SalesPage() {
   };
 
   const handleWhatsAppShare = async () => {
-    if (!selectedSale || !receiptRef.current) return;
+    if (!selectedSale || !a4InvoiceRef.current) return;
 
     try {
       setIsProcessing(true);
-      toast.info("Generating receipt image...");
+      toast.info("Generating PDF invoice...");
 
-      // Temporarily make it visible off-screen for html2canvas to capture
-      const originalDisplay = receiptRef.current.style.display;
-      const originalPosition = receiptRef.current.style.position;
-      const originalLeft = receiptRef.current.style.left;
-      const originalTop = receiptRef.current.style.top;
-      const originalZIndex = receiptRef.current.style.zIndex;
+      // Temporarily make the A4 Invoice visible off-screen for html2canvas
+      const wrapper = a4InvoiceRef.current.parentElement;
+      const originalDisplay = wrapper ? wrapper.style.display : '';
+      const originalPosition = wrapper ? wrapper.style.position : '';
+      const originalLeft = wrapper ? wrapper.style.left : '';
+      const originalTop = wrapper ? wrapper.style.top : '';
+      const originalZIndex = wrapper ? wrapper.style.zIndex : '';
+      const originalWidth = wrapper ? wrapper.style.width : '';
       
-      receiptRef.current.classList.remove('hidden');
-      receiptRef.current.style.display = 'block';
-      receiptRef.current.style.position = 'absolute';
-      receiptRef.current.style.left = '-9999px';
-      receiptRef.current.style.top = '0';
-      receiptRef.current.style.zIndex = '-100';
+      if (wrapper) {
+        wrapper.classList.remove('hidden');
+        wrapper.style.display = 'block';
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '-9999px';
+        wrapper.style.top = '0';
+        wrapper.style.zIndex = '-100';
+        wrapper.style.width = '794px'; // Standard A4 width in pixels at 96 DPI
+      }
 
-      const canvas = await html2canvas(receiptRef.current, {
-        scale: 2, // Better quality
+      const canvas = await html2canvas(a4InvoiceRef.current, {
+        scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
       });
 
       // Restore original styles
-      receiptRef.current.classList.add('hidden');
-      receiptRef.current.style.display = originalDisplay;
-      receiptRef.current.style.position = originalPosition;
-      receiptRef.current.style.left = originalLeft;
-      receiptRef.current.style.top = originalTop;
-      receiptRef.current.style.zIndex = originalZIndex;
+      if (wrapper) {
+        wrapper.classList.add('hidden');
+        wrapper.style.display = originalDisplay;
+        wrapper.style.position = originalPosition;
+        wrapper.style.left = originalLeft;
+        wrapper.style.top = originalTop;
+        wrapper.style.zIndex = originalZIndex;
+        wrapper.style.width = originalWidth;
+      }
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          toast.error("Failed to generate receipt image.");
-          return;
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4"
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      
+      const pdfBlob = pdf.output("blob");
+      const file = new File([pdfBlob], `Invoice-${selectedSale.invoice_number}.pdf`, { type: "application/pdf" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Invoice ${selectedSale.invoice_number}`,
+            text: `Here is your invoice for ${selectedSale.invoice_number}`,
+          });
+          toast.success("Shared successfully");
+        } catch (error) {
+          console.error("Error sharing:", error);
         }
-
-        const file = new File([blob], `Receipt-${selectedSale.invoice_number}.png`, { type: "image/png" });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: `Receipt ${selectedSale.invoice_number}`,
-              text: `Here is your receipt for ${selectedSale.invoice_number}`,
-            });
-            toast.success("Shared successfully");
-          } catch (error) {
-            console.error("Error sharing:", error);
-            // User likely cancelled the share dialog
-          }
-        } else {
-          // Fallback for desktop/unsupported browsers: Download image and open WhatsApp web
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `Receipt-${selectedSale.invoice_number}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-          
-          toast.success("Receipt image downloaded!");
-          const text = `Receipt: ${selectedSale.invoice_number}. Please find the attached image.`;
-          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-          window.open(whatsappUrl, "_blank");
-        }
-      }, "image/png", 1.0);
+      } else {
+        // Fallback: Download PDF and open WhatsApp web
+        pdf.save(`Invoice-${selectedSale.invoice_number}.pdf`);
+        
+        toast.success("PDF downloaded!");
+        const text = `Invoice: ${selectedSale.invoice_number}. Please find the attached PDF.`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, "_blank");
+      }
     } catch (error) {
-      console.error("Failed to capture receipt:", error);
-      toast.error("Failed to generate receipt image");
+      console.error("Failed to generate PDF:", error);
+      toast.error("Failed to generate PDF invoice");
     } finally {
       setIsProcessing(false);
     }
@@ -570,6 +581,35 @@ export default function SalesPage() {
             width={receiptSettings.width as any}
           />
         )}
+
+        <div className="hidden print:block">
+          {selectedSale && (
+            <A4Invoice
+              ref={a4InvoiceRef}
+              invoiceNumber={selectedSale.invoice_number}
+              items={selectedSale.sale_items.map(i => ({
+                product_id: i.product_id,
+                product_name: i.product_name,
+                quantity: i.quantity,
+                unit_price: i.unit_price,
+                image_url: undefined,
+              }))}
+              totalAmount={selectedSale.total_amount}
+              discountAmount={selectedSale.discount_amount || 0}
+              paidAmount={selectedSale.paid_amount}
+              changeAmount={selectedSale.change_amount || 0}
+              paymentMethod={selectedSale.payment_method}
+              date={new Date(selectedSale.created_at)}
+              cashierName={selectedSale.shift_cashier_name || selectedSale.cashier?.full_name}
+              customer={{ name: "Walk-in Customer", id: "walk-in" }} // Simplification since customer data might not be joined here
+              bakeryName={bakeryProfile.name}
+              address={bakeryProfile.address}
+              phone={bakeryProfile.phone}
+              logo={receiptSettings.logo}
+              showLogo={receiptSettings.showLogo}
+            />
+          )}
+        </div>
 
       </div>
     </ProtectedRoute>
