@@ -489,15 +489,15 @@ export default function SettingsPage() {
             {/* Permissions Tab */}
             <Tabs.Content value="permissions" className="flex-1 flex flex-col min-h-0 outline-none animate-in fade-in slide-in-from-bottom-2">
               <div className="bg-card rounded-2xl border border-border shadow-sm flex flex-col min-h-0 flex-1 overflow-hidden">
-                <div className="p-4 border-b border-border flex items-center gap-4 bg-muted/10 shrink-0">
-                  <span className="text-sm font-medium text-foreground">Select Role:</span>
-                  <div className="flex gap-2">
+                <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-muted/10 shrink-0">
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap">Select Role:</span>
+                  <div className="flex flex-wrap gap-2">
                     {roles.map(role => (
                       <button
                         key={role}
                         onClick={() => setSelectedRole(role)}
                         className={cn(
-                          "px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors border",
+                          "px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors border whitespace-nowrap",
                           selectedRole === role
                             ? "bg-primary text-primary-foreground border-primary shadow-sm"
                             : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -509,8 +509,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-0">
-                  <table className="w-full text-left text-sm whitespace-nowrap">
+                <div className="flex-1 overflow-auto p-0">
+                  <table className="w-full text-left text-sm whitespace-nowrap min-w-[600px]">
                     <thead className="bg-muted/30 sticky top-0 backdrop-blur-sm z-10">
                       <tr>
                         <th className="px-6 py-4 font-semibold text-muted-foreground border-b border-border w-1/3">Resource Name</th>
