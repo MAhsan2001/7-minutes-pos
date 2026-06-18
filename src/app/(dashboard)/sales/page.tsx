@@ -20,7 +20,8 @@ import {
   ChevronRight,
   Ban,
   CornerUpLeft,
-  AlertTriangle
+  AlertTriangle,
+  Share2
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 
@@ -147,6 +148,57 @@ export default function SalesPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!selectedSale) return;
+
+    const pad = (str: string, length: number) => {
+      if (str.length >= length) return str.substring(0, length);
+      return str + " ".repeat(length - str.length);
+    };
+    
+    const padLeft = (str: string, length: number) => {
+      if (str.length >= length) return str;
+      return " ".repeat(length - str.length) + str;
+    };
+
+    let text = `*${bakeryProfile.name}*\n`;
+    text += `${bakeryProfile.address}\n`;
+    if (bakeryProfile.phone) text += `Tel: ${bakeryProfile.phone}\n`;
+    text += `--------------------------------\n`;
+    text += `Invoice: ${selectedSale.invoice_number}\n`;
+    text += `Date: ${formatDate(selectedSale.created_at)}\n`;
+    if (selectedSale.cashier?.full_name || selectedSale.shift_cashier_name) {
+      text += `Cashier: ${selectedSale.shift_cashier_name || selectedSale.cashier?.full_name}\n`;
+    }
+    text += `--------------------------------\n`;
+    
+    selectedSale.sale_items.forEach(item => {
+      const nameLine = `${item.quantity}x ${item.product_name}`;
+      const priceStr = formatCurrency(item.total_price);
+      text += `${pad(nameLine, 22)} ${padLeft(priceStr, 9)}\n`;
+    });
+    
+    text += `--------------------------------\n`;
+    if (selectedSale.discount_amount && selectedSale.discount_amount > 0) {
+      text += `Subtotal:      ${padLeft(formatCurrency(selectedSale.total_amount + selectedSale.discount_amount), 17)}\n`;
+      text += `Discount:     -${padLeft(formatCurrency(selectedSale.discount_amount), 17)}\n`;
+    }
+    text += `*TOTAL:         ${padLeft(formatCurrency(selectedSale.total_amount), 17)}*\n`;
+    text += `--------------------------------\n`;
+    text += `Payment:       ${padLeft(selectedSale.payment_method.toUpperCase(), 17)}\n`;
+    text += `Amount Paid:   ${padLeft(formatCurrency(selectedSale.paid_amount || 0), 17)}\n`;
+    if (selectedSale.change_amount && selectedSale.change_amount > 0) {
+      text += `Change:        ${padLeft(formatCurrency(selectedSale.change_amount), 17)}\n`;
+    }
+    text += `--------------------------------\n`;
+    if (receiptSettings.footer) {
+      text += `${receiptSettings.footer}\n`;
+    }
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, "_blank");
   };
 
   const handlePrint = () => {
@@ -438,13 +490,22 @@ export default function SalesPage() {
                     )}
                   </div>
                   
-                  <button
-                    onClick={handlePrint}
-                    className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary/90 transition-colors shadow-sm ml-auto"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Reprint Receipt
-                  </button>
+                  <div className="flex gap-2 ml-auto">
+                    <button
+                      onClick={handleWhatsAppShare}
+                      className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#20bd5a] transition-colors shadow-sm"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      WhatsApp
+                    </button>
+                    <button
+                      onClick={handlePrint}
+                      className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary/90 transition-colors shadow-sm"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Reprint Receipt
+                    </button>
+                  </div>
                 </div>
               )}
             </Dialog.Content>
