@@ -184,6 +184,7 @@ export default function SalesPage() {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
+        windowWidth: 1024, // Force a desktop-sized window context so the A4 layout doesn't break on mobile
       });
 
       // Restore original styles
