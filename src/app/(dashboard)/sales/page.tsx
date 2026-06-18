@@ -10,6 +10,7 @@ import type { Sale, SaleItem } from "@/lib/types";
 import { hasPermission } from "@/lib/utils/rbac";
 import { SALE_STATUS_CONFIG, APP_NAME } from "@/lib/utils/constants";
 import { Receipt as ThermalReceipt } from "@/components/pos/Receipt";
+import html2canvas from "html2canvas";
 import {
   Search,
   Receipt,
@@ -150,55 +151,82 @@ export default function SalesPage() {
     }
   };
 
-  const handleWhatsAppShare = () => {
-    if (!selectedSale) return;
+  const handleWhatsAppShare = async () => {
+    if (!selectedSale || !receiptRef.current) return;
 
-    const pad = (str: string, length: number) => {
-      if (str.length >= length) return str.substring(0, length);
-      return str + " ".repeat(length - str.length);
-    };
-    
-    const padLeft = (str: string, length: number) => {
-      if (str.length >= length) return str;
-      return " ".repeat(length - str.length) + str;
-    };
+    try {
+      setIsProcessing(true);
+      toast.info("Generating receipt image...");
 
-    let text = `*${bakeryProfile.name}*\n`;
-    text += `${bakeryProfile.address}\n`;
-    if (bakeryProfile.phone) text += `Tel: ${bakeryProfile.phone}\n`;
-    text += `--------------------------------\n`;
-    text += `Invoice: ${selectedSale.invoice_number}\n`;
-    text += `Date: ${formatDate(selectedSale.created_at)}\n`;
-    if (selectedSale.cashier?.full_name || selectedSale.shift_cashier_name) {
-      text += `Cashier: ${selectedSale.shift_cashier_name || selectedSale.cashier?.full_name}\n`;
-    }
-    text += `--------------------------------\n`;
-    
-    selectedSale.sale_items.forEach(item => {
-      const nameLine = `${item.quantity}x ${item.product_name}`;
-      const priceStr = formatCurrency(item.total_price);
-      text += `${pad(nameLine, 22)} ${padLeft(priceStr, 9)}\n`;
-    });
-    
-    text += `--------------------------------\n`;
-    if (selectedSale.discount_amount && selectedSale.discount_amount > 0) {
-      text += `Subtotal:      ${padLeft(formatCurrency(selectedSale.total_amount + selectedSale.discount_amount), 17)}\n`;
-      text += `Discount:     -${padLeft(formatCurrency(selectedSale.discount_amount), 17)}\n`;
-    }
-    text += `*TOTAL:         ${padLeft(formatCurrency(selectedSale.total_amount), 17)}*\n`;
-    text += `--------------------------------\n`;
-    text += `Payment:       ${padLeft(selectedSale.payment_method.toUpperCase(), 17)}\n`;
-    text += `Amount Paid:   ${padLeft(formatCurrency(selectedSale.paid_amount || 0), 17)}\n`;
-    if (selectedSale.change_amount && selectedSale.change_amount > 0) {
-      text += `Change:        ${padLeft(formatCurrency(selectedSale.change_amount), 17)}\n`;
-    }
-    text += `--------------------------------\n`;
-    if (receiptSettings.footer) {
-      text += `${receiptSettings.footer}\n`;
-    }
+      // Temporarily make it visible off-screen for html2canvas to capture
+      const originalDisplay = receiptRef.current.style.display;
+      const originalPosition = receiptRef.current.style.position;
+      const originalLeft = receiptRef.current.style.left;
+      const originalTop = receiptRef.current.style.top;
+      const originalZIndex = receiptRef.current.style.zIndex;
+      
+      receiptRef.current.classList.remove('hidden');
+      receiptRef.current.style.display = 'block';
+      receiptRef.current.style.position = 'absolute';
+      receiptRef.current.style.left = '-9999px';
+      receiptRef.current.style.top = '0';
+      receiptRef.current.style.zIndex = '-100';
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(whatsappUrl, "_blank");
+      const canvas = await html2canvas(receiptRef.current, {
+        scale: 2, // Better quality
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+
+      // Restore original styles
+      receiptRef.current.classList.add('hidden');
+      receiptRef.current.style.display = originalDisplay;
+      receiptRef.current.style.position = originalPosition;
+      receiptRef.current.style.left = originalLeft;
+      receiptRef.current.style.top = originalTop;
+      receiptRef.current.style.zIndex = originalZIndex;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast.error("Failed to generate receipt image.");
+          return;
+        }
+
+        const file = new File([blob], `Receipt-${selectedSale.invoice_number}.png`, { type: "image/png" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Receipt ${selectedSale.invoice_number}`,
+              text: `Here is your receipt for ${selectedSale.invoice_number}`,
+            });
+            toast.success("Shared successfully");
+          } catch (error) {
+            console.error("Error sharing:", error);
+            // User likely cancelled the share dialog
+          }
+        } else {
+          // Fallback for desktop/unsupported browsers: Download image and open WhatsApp web
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `Receipt-${selectedSale.invoice_number}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          
+          toast.success("Receipt image downloaded!");
+          const text = `Receipt: ${selectedSale.invoice_number}. Please find the attached image.`;
+          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+          window.open(whatsappUrl, "_blank");
+        }
+      }, "image/png", 1.0);
+    } catch (error) {
+      console.error("Failed to capture receipt:", error);
+      toast.error("Failed to generate receipt image");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handlePrint = () => {
