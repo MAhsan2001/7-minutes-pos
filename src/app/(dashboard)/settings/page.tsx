@@ -490,8 +490,8 @@ export default function SettingsPage() {
             <Tabs.Content value="permissions" className="flex-1 flex flex-col min-h-0 outline-none animate-in fade-in slide-in-from-bottom-2">
               <div className="bg-card rounded-2xl border border-border shadow-sm flex flex-col min-h-0 flex-1 overflow-hidden">
                 <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-muted/10 shrink-0">
-                  <span className="text-sm font-medium text-foreground whitespace-nowrap">Select Role:</span>
-                  <div className="flex flex-wrap gap-2">
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap shrink-0">Select Role:</span>
+                  <div className="flex overflow-x-auto pb-2 -mb-2 w-full gap-2 scrollbar-none">
                     {roles.map(role => (
                       <button
                         key={role}
