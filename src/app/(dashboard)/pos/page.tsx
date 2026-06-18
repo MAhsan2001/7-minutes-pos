@@ -492,6 +492,27 @@ export default function POSPage() {
           </div>
         </div>
 
+        {/* Mobile View Cart Button (Sticky Bottom) */}
+        {!isMobileCartOpen && cart.items.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] lg:hidden z-30 animate-in slide-in-from-bottom-full duration-300">
+            <button
+              onClick={() => setIsMobileCartOpen(true)}
+              className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg flex justify-between items-center px-6"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <ShoppingCart className="w-6 h-6" />
+                  <span className="absolute -top-2 -right-2 bg-foreground text-background text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                    {cart.getItemCount()}
+                  </span>
+                </div>
+                <span className="text-lg">View Cart</span>
+              </div>
+              <span className="text-xl">{formatCurrency(cart.getTotal())}</span>
+            </button>
+          </div>
+        )}
+
         {/* Mobile Overlay */}
         {isMobileCartOpen && (
           <div 
