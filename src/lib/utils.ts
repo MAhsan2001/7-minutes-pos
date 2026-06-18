@@ -114,12 +114,14 @@ export function generateInvoiceNumber(): string {
     
     localStorage.setItem("pos_invoice_sequence", sequence.toString());
     
-    return `${datePrefix}${sequence.toString().padStart(4, "0")}`;
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${datePrefix}${sequence.toString().padStart(4, "0")}-${randomSuffix}`;
   }
 
   // Fallback if window is undefined
   const randomSequence = Math.floor(Math.random() * 9999) + 1;
-  return `${datePrefix}${randomSequence.toString().padStart(4, "0")}`;
+  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${datePrefix}${randomSequence.toString().padStart(4, "0")}-${randomSuffix}`;
 }
 
 /**
