@@ -127,9 +127,9 @@ export default function ProductsPage() {
       category_id: product.category_id,
       price: product.price.toString(),
       cost_price: product.cost_price.toString(),
-      unit: product.unit,
-      stock_quantity: product.stock_quantity.toString(),
-      low_stock_threshold: product.low_stock_threshold.toString(),
+      unit: product.unit || "piece",
+      stock_quantity: (product.stock_quantity || 0).toString(),
+      low_stock_threshold: (product.low_stock_threshold || 10).toString(),
       is_active: product.is_active,
     });
     setVariants((product.variants || []).map(v => ({ id: v.id, name: v.name, price: v.price.toString(), is_active: v.is_active })));
@@ -423,7 +423,7 @@ export default function ProductsPage() {
                           <span
                             className={cn(
                               "font-medium",
-                              product.stock_quantity <= product.low_stock_threshold
+                              (product.stock_quantity || 0) <= (product.low_stock_threshold || 10)
                                 ? "text-destructive"
                                 : "text-foreground"
                             )}

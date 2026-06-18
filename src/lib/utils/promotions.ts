@@ -1,4 +1,4 @@
-import type { CartItem, Promotion } from "@/lib/types";
+import type { CartItem, Promotion, Product } from "@/lib/types";
 
 export interface PromotionResult {
   totalDiscount: number;

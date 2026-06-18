@@ -111,12 +111,16 @@ export interface Product {
   name: string;
   category_id: string;
   price: number;
-  cost: number;
+  cost_price: number;
   barcode: string;
   sku: string;
   min_stock_level: number;
   is_active: boolean;
   image_url?: string;
+  stock_quantity?: number;
+  low_stock_threshold?: number;
+  unit?: ProductUnit;
+  category?: { name: string };
   variants?: ProductVariant[];
   addons?: ProductAddon[];
 }
@@ -140,6 +144,7 @@ export interface Sale {
   vat_amount: number;
   sscl_amount: number;
   is_credit: boolean;
+  change_amount?: number;
   created_at: string;
   updated_at: string;
   cashier?: Profile;

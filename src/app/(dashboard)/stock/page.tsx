@@ -88,7 +88,7 @@ export default function StockPage() {
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLowStock = showLowStockOnly
-      ? p.stock_quantity <= p.low_stock_threshold
+      ? (p.stock_quantity || 0) <= (p.low_stock_threshold || 10)
       : true;
     return matchesSearch && matchesLowStock;
   });
@@ -244,8 +244,8 @@ export default function StockPage() {
                       </tr>
                     ) : (
                       filteredProducts.map((product) => {
-                        const isLow = product.stock_quantity <= product.low_stock_threshold;
-                        const isOut = product.stock_quantity <= 0;
+                        const isLow = (product.stock_quantity || 0) <= (product.low_stock_threshold || 10);
+                        const isOut = (product.stock_quantity || 0) <= 0;
                         return (
                           <tr key={product.id} className="hover:bg-muted/30 transition-colors">
                             <td className="px-6 py-4">

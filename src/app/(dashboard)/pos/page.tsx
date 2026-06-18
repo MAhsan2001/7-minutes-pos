@@ -466,7 +466,7 @@ export default function POSPage() {
                       <span className="text-4xl font-heading font-bold text-muted-foreground/30 group-hover:text-primary/20 transition-colors">
                         {product.name.charAt(0)}
                       </span>
-                      {product.stock_quantity <= product.low_stock_threshold && (
+                      {typeof product.stock_quantity === 'number' && typeof product.low_stock_threshold === 'number' && product.stock_quantity <= product.low_stock_threshold && (
                         <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                           {product.stock_quantity} left
                         </div>

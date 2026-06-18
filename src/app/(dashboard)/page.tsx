@@ -370,8 +370,8 @@ export default function DashboardPage() {
         // Since Supabase doesn't easily let us filter by column A <= column B in a simple select without an RPC, 
         // we'll filter client side for exact threshold, but use a rough limit on the server to save bandwidth.
         const { data: allProducts } = await supabase.from("products").select("id, name, stock_quantity, low_stock_threshold, unit").eq("is_active", true);
-        const actualLowStock = allProducts ? allProducts.filter(p => p.stock_quantity <= p.low_stock_threshold) : [];
-        const sortedLowStock = actualLowStock.sort((a, b) => (a.stock_quantity / a.low_stock_threshold) - (b.stock_quantity / b.low_stock_threshold)).slice(0, 5);
+        const actualLowStock = allProducts ? allProducts.filter(p => (p.stock_quantity || 0) <= (p.low_stock_threshold || 10)) : [];
+        const sortedLowStock = actualLowStock.sort((a, b) => ((a.stock_quantity || 0) / (a.low_stock_threshold || 10)) - ((b.stock_quantity || 0) / (b.low_stock_threshold || 10))).slice(0, 5);
         
         setLowStockItems(sortedLowStock.map(p => ({
           id: p.id,

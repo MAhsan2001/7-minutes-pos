@@ -461,11 +461,11 @@ export default function SalesPage() {
               product_name: i.product_name,
               quantity: i.quantity,
               unit_price: i.unit_price,
-              image_url: null,
+              image_url: undefined,
             }))}
             totalAmount={selectedSale.total_amount}
             paidAmount={selectedSale.paid_amount}
-            changeAmount={selectedSale.change_amount}
+            changeAmount={selectedSale.change_amount || 0}
             paymentMethod={selectedSale.payment_method}
             date={new Date(selectedSale.created_at)}
             cashierName={selectedSale.cashier?.full_name}
