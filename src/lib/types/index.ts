@@ -163,6 +163,12 @@ export interface SaleItem {
   product_id: string;
   variant_id: string | null;
   product_name: string;
+  variant_name?: string;
+  addons?: {
+    id: string;
+    name: string;
+    price: number;
+  }[];
   quantity: number;
   unit_price: number;
   total_price: number;
