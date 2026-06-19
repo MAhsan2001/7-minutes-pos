@@ -36,7 +36,7 @@ import * as ScrollArea from "@radix-ui/react-scroll-area";
 import { Receipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function POSPage() {
@@ -459,9 +459,9 @@ export default function POSPage() {
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, "_blank");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to generate PDF:", error);
-      toast.error("Failed to generate PDF invoice");
+      toast.error(error.message || "Failed to generate PDF invoice");
     } finally {
       setIsProcessing(false);
     }
