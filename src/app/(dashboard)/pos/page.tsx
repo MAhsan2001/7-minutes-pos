@@ -28,12 +28,15 @@ import {
   Printer,
   UserCircle,
   ChevronDown,
-  FileText
+  FileText,
+  Share2
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import { Receipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function POSPage() {
@@ -81,6 +84,7 @@ export default function POSPage() {
   
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const a4InvoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -375,6 +379,89 @@ export default function POSPage() {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.message || "Failed to complete sale");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleWhatsAppShare = async () => {
+    if (!receiptSnapshot || !a4InvoiceRef.current) return;
+
+    try {
+      setIsProcessing(true);
+      toast.info("Generating PDF invoice...");
+
+      const wrapper = a4InvoiceRef.current.parentElement;
+      const originalDisplay = wrapper ? wrapper.style.display : '';
+      const originalPosition = wrapper ? wrapper.style.position : '';
+      const originalLeft = wrapper ? wrapper.style.left : '';
+      const originalTop = wrapper ? wrapper.style.top : '';
+      const originalZIndex = wrapper ? wrapper.style.zIndex : '';
+      const originalWidth = wrapper ? wrapper.style.width : '';
+      
+      if (wrapper) {
+        wrapper.classList.remove('hidden');
+        wrapper.style.display = 'block';
+        wrapper.style.position = 'absolute';
+        wrapper.style.left = '-9999px';
+        wrapper.style.top = '0';
+        wrapper.style.zIndex = '-100';
+        wrapper.style.width = '794px';
+      }
+
+      const canvas = await html2canvas(a4InvoiceRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        windowWidth: 1024,
+      });
+
+      if (wrapper) {
+        wrapper.classList.add('hidden');
+        wrapper.style.display = originalDisplay;
+        wrapper.style.position = originalPosition;
+        wrapper.style.left = originalLeft;
+        wrapper.style.top = originalTop;
+        wrapper.style.zIndex = originalZIndex;
+        wrapper.style.width = originalWidth;
+      }
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4"
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      
+      const pdfBlob = pdf.output("blob");
+      const file = new File([pdfBlob], `Invoice-${receiptSnapshot.invoiceNumber}.pdf`, { type: "application/pdf" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Invoice ${receiptSnapshot.invoiceNumber}`,
+            text: `Here is your invoice for ${receiptSnapshot.invoiceNumber}`,
+          });
+          toast.success("Shared successfully");
+        } catch (error) {
+          console.error("Error sharing:", error);
+        }
+      } else {
+        pdf.save(`Invoice-${receiptSnapshot.invoiceNumber}.pdf`);
+        toast.success("PDF downloaded!");
+        const text = `Invoice: ${receiptSnapshot.invoiceNumber}. Please find the attached PDF.`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, "_blank");
+      }
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      toast.error("Failed to generate PDF invoice");
     } finally {
       setIsProcessing(false);
     }
@@ -1022,16 +1109,25 @@ export default function POSPage() {
                   <Printer className="w-5 h-5" />
                   Print Thermal Receipt
                 </button>
-                <button
-                  onClick={() => {
-                    setPrintMode("a4");
-                    setTimeout(() => window.print(), 50);
-                  }}
-                  className="w-full py-3 bg-primary/10 text-primary font-medium rounded-xl hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 border border-primary/20"
-                >
-                  <FileText className="w-5 h-5" />
-                  Print A4 Invoice
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleWhatsAppShare}
+                    className="flex-1 py-3 bg-[#25D366] text-white font-medium rounded-xl hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Share2 className="w-5 h-5" />
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPrintMode("a4");
+                      setTimeout(() => window.print(), 50);
+                    }}
+                    className="flex-1 py-3 bg-primary/10 text-primary font-medium rounded-xl hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 border border-primary/20"
+                  >
+                    <FileText className="w-5 h-5" />
+                    A4 Invoice
+                  </button>
+                </div>
                 <button
                   onClick={() => {
                     setIsSuccessOpen(false);
@@ -1075,9 +1171,10 @@ export default function POSPage() {
         />
       )}
 
-      <div className="hidden print:block">
-        {receiptSnapshot && printMode === "a4" && (
+      <div className={printMode === "a4" ? "hidden print:block" : "hidden"}>
+        {receiptSnapshot && (
           <A4Invoice
+            ref={a4InvoiceRef}
             invoiceNumber={receiptSnapshot.invoiceNumber}
             items={receiptSnapshot.items}
             totalAmount={receiptSnapshot.totalAmount}
