@@ -11,7 +11,7 @@ import { hasPermission } from "@/lib/utils/rbac";
 import { SALE_STATUS_CONFIG, APP_NAME } from "@/lib/utils/constants";
 import { Receipt as ThermalReceipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
-import html2canvas from "html2canvas";
+import { toCanvas, toBlob } from "html-to-image";
 import { jsPDF } from "jspdf";
 import {
   Search,
@@ -181,27 +181,14 @@ export default function SalesPage() {
         wrapper.style.width = '794px';
       }
 
-      const canvas = await html2canvas(a4InvoiceRef.current, {
-        scale: 1.5,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: 1024,
-      });
-
-      // Restore original styles
-      if (wrapper) {
-        wrapper.classList.add('hidden');
-        wrapper.style.display = originalDisplay;
-        wrapper.style.position = originalPosition;
-        wrapper.style.left = originalLeft;
-        wrapper.style.top = originalTop;
-        wrapper.style.zIndex = originalZIndex;
-        wrapper.style.width = originalWidth;
-      }
-
       let finalFile: File;
 
       if (format === 'pdf') {
+        const canvas = await toCanvas(a4InvoiceRef.current, {
+          pixelRatio: 1.5,
+          backgroundColor: "#ffffff",
+          style: { width: '1024px' }
+        });
         const imgData = canvas.toDataURL("image/jpeg", 0.8);
         const pdf = new jsPDF({
           orientation: "portrait",
@@ -218,11 +205,24 @@ export default function SalesPage() {
         const pdfBlob = pdf.output("blob");
         finalFile = new File([pdfBlob], `Invoice-${selectedSale.invoice_number}.pdf`, { type: "application/pdf" });
       } else {
-        const blob = await new Promise<Blob | null>((resolve) => {
-          canvas.toBlob(resolve, "image/png");
+        const blob = await toBlob(a4InvoiceRef.current, {
+          pixelRatio: 1.5,
+          backgroundColor: "#ffffff",
+          style: { width: '1024px' }
         });
         if (!blob) throw new Error("Failed to generate image blob");
         finalFile = new File([blob], `Invoice-${selectedSale.invoice_number}.png`, { type: "image/png" });
+      }
+
+      // Restore original styles
+      if (wrapper) {
+        wrapper.classList.add('hidden');
+        wrapper.style.display = originalDisplay;
+        wrapper.style.position = originalPosition;
+        wrapper.style.left = originalLeft;
+        wrapper.style.top = originalTop;
+        wrapper.style.zIndex = originalZIndex;
+        wrapper.style.width = originalWidth;
       }
 
       const text = `Here is your invoice from ${bakeryProfile?.name || APP_NAME}.\nInvoice #: ${selectedSale.invoice_number}\nTotal: ${formatCurrency(selectedSale.total_amount)}`;
