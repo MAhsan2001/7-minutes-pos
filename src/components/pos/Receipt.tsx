@@ -189,7 +189,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
 
         {/* Footer */}
         <div className="text-center text-[10px] mt-6 flex flex-col items-center">
-          <p className="font-bold mb-2">{footerMessage}</p>
+          <p className="font-bold text-[14px] leading-tight mb-2 uppercase">{footerMessage}</p>
           <p className="border-t border-dashed border-black pt-2 w-full">Powered By @SanTech Solution</p>
           <p>0712805199</p>
         </div>
