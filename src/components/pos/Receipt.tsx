@@ -92,14 +92,14 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         {/* Meta Info */}
         <div className="text-xs mb-3 flex justify-between">
           <div className="flex flex-col">
-            <span className="font-bold">Customer</span>
-            <span>{customerName || "Walk-in"}</span>
-          </div>
-          <div className="flex flex-col text-right">
             <span>Date: {formatDate(date.toISOString())}</span>
             <span>Time: {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
             <span>Invoice No: {invoiceNumber}</span>
             <span>Cashier: {cashierName}</span>
+          </div>
+          <div className="flex flex-col text-right">
+            <span className="font-bold">Customer</span>
+            <span>{customerName || "Walk-in"}</span>
           </div>
         </div>
 
