@@ -96,7 +96,9 @@ export function calculatePromotions(
 
       if (maxCombos > 0) {
         let regularPriceForCombos = 0;
-        // Deduct exactly `reqItem.quantity * maxCombos` from the matching trackers
+        const pendingDeductions: { tracker: typeof cartTrackers[0], deduct: number, productName: string }[] = [];
+
+        // Calculate regular price and plan deductions
         for (const match of reqMatches) {
           let neededToDeduct = match.reqItem.quantity * maxCombos;
           for (const tracker of match.matchingTrackers) {
@@ -105,19 +107,23 @@ export function calculatePromotions(
             
             // Add the exact unit price of THIS specific cart item (including variant and addons)
             regularPriceForCombos += (deduct * tracker.item.unit_price);
+            pendingDeductions.push({ tracker, deduct, productName: tracker.item.product_name });
             
-            tracker.remainingQty -= deduct;
             neededToDeduct -= deduct;
-            
-            if (!affectedItems.includes(tracker.item.product_name)) {
-              affectedItems.push(tracker.item.product_name);
-            }
           }
         }
 
         const comboPrice = promo.value * maxCombos;
         if (regularPriceForCombos > comboPrice) {
           promoDiscount += (regularPriceForCombos - comboPrice);
+          
+          // Now officially deduct the quantities since the combo is mathematically valid
+          for (const pd of pendingDeductions) {
+            pd.tracker.remainingQty -= pd.deduct;
+            if (!affectedItems.includes(pd.productName)) {
+              affectedItems.push(pd.productName);
+            }
+          }
         }
       }
     } else {
