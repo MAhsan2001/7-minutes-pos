@@ -200,6 +200,10 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
           <div className="text-sm text-[#6b7280]">
             <p className="font-bold mb-1 text-[#374151]">Thank you for your business!</p>
             <p>If you have any questions regarding this invoice, please contact us at {phone}.</p>
+            <div className="mt-4 pt-4 border-t border-dashed border-[#d1d5db]">
+              <p className="font-medium text-[#111827]">Powered By @SanTech Solutions</p>
+              <p>0712805199</p>
+            </div>
           </div>
           
           <div className="flex flex-col items-center ml-4">

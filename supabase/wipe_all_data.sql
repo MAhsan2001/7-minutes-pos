@@ -26,7 +26,7 @@ DELETE FROM customers;
 
 -- 3. Reset Settings to Default
 UPDATE settings 
-SET value = '{"email": "", "phone": "", "address": "", "bakery_name": "Bakery POS", "shift_cashiers": []}'::jsonb 
+SET value = '{"email": "", "phone": "", "address": "", "bakery_name": "7 Minutes", "shift_cashiers": []}'::jsonb 
 WHERE key = 'bakery_profile';
 
 UPDATE settings 
