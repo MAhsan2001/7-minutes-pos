@@ -602,7 +602,7 @@ export default function SalesPage() {
               paymentMethod={selectedSale.payment_method}
               date={new Date(selectedSale.created_at)}
               cashierName={selectedSale.shift_cashier_name || selectedSale.cashier?.full_name}
-              customer={{ name: "Walk-in Customer", id: "walk-in" }} // Simplification since customer data might not be joined here
+              customer={null}
               bakeryName={bakeryProfile.name}
               address={bakeryProfile.address}
               phone={bakeryProfile.phone}
