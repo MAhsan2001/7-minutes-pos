@@ -869,8 +869,8 @@ export default function POSPage() {
         {/* Checkout Modal */}
         <Dialog.Root open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 p-6">
+            <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] animate-in fade-in" />
+            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl shadow-2xl z-[200] animate-in fade-in zoom-in-95 p-6">
               <div className="flex items-center justify-between mb-6">
                 <Dialog.Title className="text-2xl font-heading font-bold text-foreground">
                   Complete Sale
@@ -1026,8 +1026,8 @@ export default function POSPage() {
         {/* Variant Selection Modal */}
         <Dialog.Root open={!!selectedProductForVariants} onOpenChange={(open) => !open && setSelectedProductForVariants(null)}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 p-6">
+            <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] animate-in fade-in" />
+            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-md max-h-[90vh] overflow-y-auto bg-card border border-border rounded-2xl shadow-2xl z-[200] animate-in fade-in zoom-in-95 p-6">
               <div className="flex items-center justify-between mb-6">
                 <Dialog.Title className="text-2xl font-heading font-bold text-foreground">
                   {selectedProductForVariants?.name}
@@ -1109,8 +1109,8 @@ export default function POSPage() {
         {/* Success Modal */}
         <Dialog.Root open={isSuccessOpen} onOpenChange={setIsSuccessOpen}>
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-in fade-in" />
-            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm bg-card border border-border rounded-2xl shadow-2xl z-50 animate-in zoom-in-95 p-8 text-center">
+            <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] animate-in fade-in" />
+            <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm bg-card border border-border rounded-2xl shadow-2xl z-[200] animate-in zoom-in-95 p-8 text-center">
               <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-10 h-10 text-success" />
               </div>
