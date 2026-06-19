@@ -363,16 +363,17 @@ export default function SettingsPage() {
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Store Name</label>
+                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                          Store Name <Shield className="w-3 h-3 text-muted-foreground" />
+                        </label>
                         <input
                           type="text"
                           value={bakeryName}
-                          onChange={(e) => setBakeryName(e.target.value)}
-                          required
-                          className="w-full px-4 py-2 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                          disabled={true}
+                          className="w-full px-4 py-2 bg-muted/50 text-muted-foreground border border-border rounded-xl cursor-not-allowed"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          This name will appear on all your receipts and invoices.
+                          This name is locked by the developer for branding purposes.
                         </p>
                       </div>
                       <div className="space-y-2">
