@@ -72,7 +72,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         {/* Header */}
         <div className="text-center mb-4 flex flex-col items-center">
           {showLogo && logo && (
-            <img src={logo} alt="Logo" className="w-32 object-contain mb-2 grayscale bg-white" />
+            <img src={logo} alt="Logo" className="w-32 object-contain mb-2" style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
           )}
           <h1 className="font-bold text-xl mb-1 tracking-widest uppercase">{bakeryName}</h1>
           <div className="text-xs leading-snug">
