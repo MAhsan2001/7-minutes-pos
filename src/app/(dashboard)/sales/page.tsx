@@ -12,7 +12,6 @@ import { SALE_STATUS_CONFIG, APP_NAME } from "@/lib/utils/constants";
 import { Receipt as ThermalReceipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
 import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import {
   Search,
   Receipt,
@@ -198,39 +197,39 @@ export default function SalesPage() {
         wrapper.style.width = originalWidth;
       }
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.8);
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "a4",
-        compress: true
+      // Generate a high-quality PNG image instead of a PDF
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, "image/png");
       });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
-      
-      const pdfBlob = pdf.output("blob");
-      const file = new File([pdfBlob], `Invoice-${selectedSale.invoice_number}.pdf`, { type: "application/pdf" });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (!blob) throw new Error("Failed to generate image blob");
+
+      const file = new File([blob], `Invoice-${selectedSale.invoice_number}.png`, { type: "image/png" });
+      const text = `Here is your invoice from ${bakeryProfile?.name || APP_NAME}.\nInvoice #: ${selectedSale.invoice_number}\nTotal: ${formatCurrency(selectedSale.total_amount)}`;
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
-            files: [file],
             title: `Invoice ${selectedSale.invoice_number}`,
-            text: `Here is your invoice for ${selectedSale.invoice_number}`,
+            text: text,
+            files: [file]
           });
-          toast.success("Shared successfully");
-        } catch (error) {
-          console.error("Error sharing:", error);
+          toast.success("Invoice shared successfully");
+        } catch (error: any) {
+          if (error.name !== 'AbortError') {
+            console.error("Error sharing:", error);
+            toast.error("Could not share via native menu.");
+          }
         }
       } else {
-        // Fallback: Download PDF and open WhatsApp web
-        pdf.save(`Invoice-${selectedSale.invoice_number}.pdf`);
-        
-        toast.success("PDF downloaded!");
-        const text = `Invoice: ${selectedSale.invoice_number}. Please find the attached PDF.`;
+        // Fallback: Download Image and open WhatsApp web
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Invoice-${selectedSale.invoice_number}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Image downloaded!");
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, "_blank");
       }

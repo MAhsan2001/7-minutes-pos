@@ -36,7 +36,6 @@ import * as ScrollArea from "@radix-ui/react-scroll-area";
 import { Receipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
 import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function POSPage() {
@@ -426,38 +425,38 @@ export default function POSPage() {
         wrapper.style.width = originalWidth;
       }
 
-      // Use JPEG with 0.75 quality to drastically reduce file size (from ~8MB to <1MB)
-      const imgData = canvas.toDataURL("image/jpeg", 0.75);
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "a4",
-        compress: true // Enable jsPDF compression
+      // Generate a high-quality PNG image instead of a PDF
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob(resolve, "image/png");
       });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
-      
-      const pdfBlob = pdf.output("blob");
-      const file = new File([pdfBlob], `Invoice-${receiptSnapshot.invoiceNumber}.pdf`, { type: "application/pdf" });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (!blob) throw new Error("Failed to generate image blob");
+
+      const file = new File([blob], `Invoice-${receiptSnapshot.invoiceNumber}.png`, { type: "image/png" });
+      const text = `Here is your invoice from ${bakeryProfile?.name || APP_NAME}.\nInvoice #: ${receiptSnapshot.invoiceNumber}\nTotal: ${formatCurrency(receiptSnapshot.totalAmount - receiptSnapshot.discountAmount)}`;
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
-            files: [file],
             title: `Invoice ${receiptSnapshot.invoiceNumber}`,
-            text: `Here is your invoice for ${receiptSnapshot.invoiceNumber}`,
+            text: text,
+            files: [file]
           });
-          toast.success("Shared successfully");
-        } catch (error) {
-          console.error("Error sharing:", error);
+          toast.success("Invoice shared successfully");
+        } catch (error: any) {
+          if (error.name !== 'AbortError') {
+            console.error("Error sharing:", error);
+            toast.error("Could not share via native menu.");
+          }
         }
       } else {
-        pdf.save(`Invoice-${receiptSnapshot.invoiceNumber}.pdf`);
-        toast.success("PDF downloaded!");
-        const text = `Invoice: ${receiptSnapshot.invoiceNumber}. Please find the attached PDF.`;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Invoice-${receiptSnapshot.invoiceNumber}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Image downloaded!");
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, "_blank");
       }
