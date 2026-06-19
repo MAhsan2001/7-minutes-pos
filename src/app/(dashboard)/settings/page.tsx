@@ -1,14 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useUIStore } from "@/lib/stores/ui-store";
 import { createClient } from "@/lib/supabase/client";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 import { toast } from "sonner";
-import { Loader2, Save, Store, Shield, Receipt, Building2, Phone } from "lucide-react";
+import {
+  Save,
+  Plus,
+  Trash2,
+  Building2,
+  ReceiptText,
+  ShieldAlert,
+  Loader2,
+  X,
+  Crop as CropIcon,
+  Check,
+  Store,
+  Shield,
+  Receipt,
+  Phone
+} from "lucide-react";
+import * as Accordion from "@radix-ui/react-accordion";
 import * as Tabs from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "@/lib/cropImage";
 import { APP_NAME } from "@/lib/utils/constants";
 
 interface Permission {
@@ -85,6 +103,12 @@ export default function SettingsPage() {
   const [receiptFontFamily, setReceiptFontFamily] = useState("'Arial', sans-serif");
   const [receiptFontSize, setReceiptFontSize] = useState("text-sm");
 
+  // Cropper State
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
   // Permissions State
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>("cashier");
@@ -94,6 +118,26 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    try {
+      if (!cropImageSrc || !croppedAreaPixels) return;
+      const croppedBlob = await getCroppedImg(cropImageSrc, croppedAreaPixels, 0);
+      if (croppedBlob) {
+        // Convert Blob to File
+        const croppedFile = new File([croppedBlob], "logo.png", { type: "image/png" });
+        const base64 = await compressImage(croppedFile);
+        setReceiptLogo(base64);
+        setCropImageSrc(null);
+      }
+    } catch (e) {
+      toast.error("Failed to crop image");
+    }
+  };
 
   async function fetchSettings() {
     setIsLoading(true);
@@ -213,6 +257,58 @@ export default function SettingsPage() {
 
   return (
     <ProtectedRoute resource="settings" action="update">
+      {cropImageSrc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-background w-full max-w-lg rounded-xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-4 border-b border-border flex justify-between items-center">
+              <h3 className="font-bold text-lg">Crop Logo</h3>
+              <button onClick={() => setCropImageSrc(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="relative w-full h-[400px] bg-black">
+              <Cropper
+                image={cropImageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                objectFit="contain"
+              />
+            </div>
+            <div className="p-4 border-t border-border flex justify-between items-center bg-muted/30">
+              <input
+                type="range"
+                value={zoom}
+                min={1}
+                max={3}
+                step={0.1}
+                aria-labelledby="Zoom"
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-1/2"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCropImageSrc(null)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium border border-border hover:bg-muted"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCropSave}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 flex items-center gap-2"
+                >
+                  <CropIcon className="w-4 h-4" />
+                  Crop & Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col h-full bg-muted/10 overflow-hidden">
         <div className="px-4 md:px-8 pt-6 pb-2">
           <h1 className="text-2xl font-heading font-bold text-foreground">System Settings</h1>
@@ -410,15 +506,14 @@ export default function SettingsPage() {
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={async (e) => {
+                            onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                try {
-                                  const base64 = await compressImage(file);
-                                  setReceiptLogo(base64);
-                                } catch (error) {
-                                  toast.error("Failed to process image");
-                                }
+                                const reader = new FileReader();
+                                reader.readAsDataURL(file);
+                                reader.onload = () => {
+                                  setCropImageSrc(reader.result as string);
+                                };
                               }
                             }}
                             className="block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
