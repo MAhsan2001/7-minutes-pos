@@ -183,7 +183,7 @@ export default function PromotionsPage() {
         name: formData.name,
         type: formData.type,
         target_type: formData.target_type,
-        target_id: formData.target_type === "all" ? null : formData.target_id,
+        target_id: formData.target_id ? formData.target_id : null,
         value: Number(formData.value),
         min_quantity: Number(formData.min_quantity || 1),
         start_time: formData.start_time || null,
