@@ -167,8 +167,13 @@ export default function PromotionsPage() {
       return;
     }
 
-    if (formData.target_type !== "all" && !formData.target_id) {
+    if (formData.target_type !== "all" && formData.target_type !== "combo" && !formData.target_id) {
       toast.error("Please select a target category or product");
+      return;
+    }
+
+    if (formData.target_type === "combo" && formData.combo_items.length === 0) {
+      toast.error("Please add at least one item to the combo");
       return;
     }
 
