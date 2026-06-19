@@ -128,6 +128,14 @@ export default function CustomersPage() {
       return;
     }
 
+    if (formData.phone) {
+      const cleanPhone = formData.phone.replace(/\D/g, "");
+      if (cleanPhone.length !== 10) {
+        toast.error("Phone number must be exactly 10 digits");
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const payload = {

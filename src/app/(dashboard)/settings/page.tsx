@@ -193,6 +193,15 @@ export default function SettingsPage() {
 
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (phone) {
+      const cleanPhone = phone.replace(/\D/g, "");
+      if (cleanPhone.length !== 10) {
+        toast.error("Phone number must be exactly 10 digits");
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const { error: profileError } = await supabase
