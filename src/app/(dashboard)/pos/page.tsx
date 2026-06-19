@@ -492,9 +492,9 @@ export default function POSPage() {
 
   return (
     <ProtectedRoute resource="sales" action="create">
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-6rem)] gap-0 lg:gap-6 overflow-hidden relative print:hidden">
+      <div className="flex flex-col lg:flex-row h-[calc(100dvh-4rem)] lg:h-[calc(100vh-6rem)] gap-0 lg:gap-6 overflow-hidden relative print:hidden">
         {/* Left Side: Product Grid (65%) */}
-        <div className="flex-1 flex flex-col min-w-0 bg-card lg:rounded-2xl border-x-0 lg:border lg:border-border lg:shadow-sm overflow-hidden h-full pb-20 lg:pb-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-card lg:rounded-2xl border-x-0 lg:border lg:border-border lg:shadow-sm overflow-hidden h-full pb-24 lg:pb-0">
           {/* Header & Filters */}
           <div className="p-4 border-b border-border space-y-4 shrink-0 bg-muted/10">
             <div className="flex items-center gap-4">
@@ -604,7 +604,7 @@ export default function POSPage() {
 
         {/* Mobile View Cart Button (Sticky Bottom) */}
         {!isMobileCartOpen && cart.items.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-border shadow-[0_-20px_40px_rgba(0,0,0,0.15)] lg:hidden z-[100] transition-all">
+          <div className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-background border-t border-border shadow-[0_-20px_40px_rgba(0,0,0,0.15)] lg:hidden z-[100] transition-all">
             <button
               onClick={() => setIsMobileCartOpen(true)}
               className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg flex justify-between items-center px-6"
