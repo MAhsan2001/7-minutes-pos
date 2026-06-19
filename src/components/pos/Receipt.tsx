@@ -3,6 +3,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import type { CartItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/utils/constants";
+import { QRCodeCanvas } from "qrcode.react";
 
 interface ReceiptProps {
   invoiceNumber: string;
@@ -190,7 +191,20 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         {/* Footer */}
         <div className="text-center text-[10px] mt-6 flex flex-col items-center">
           <p className="font-bold text-[14px] leading-tight mb-2 uppercase">{footerMessage}</p>
-          <p className="border-t border-dashed border-black pt-2 w-full">Powered By @SanTech Solution</p>
+          
+          {/* Instagram Section */}
+          <div className="mt-3 mb-4 flex flex-col items-center">
+            <p className="font-bold text-xs uppercase mb-1">Follow us on Instagram</p>
+            <p className="font-bold text-[14px] mb-2">@7MIINUTES</p>
+            <QRCodeCanvas 
+              value="https://www.instagram.com/7miinutes?utm_source=qr&igsh=cnVnd3AzNWJoNnRm" 
+              size={90}
+              level="M"
+              includeMargin={false}
+            />
+          </div>
+
+          <p className="border-t border-dashed border-black pt-2 w-full mt-2">Powered By @SanTech Solution</p>
           <p>0712805199</p>
         </div>
       </div>

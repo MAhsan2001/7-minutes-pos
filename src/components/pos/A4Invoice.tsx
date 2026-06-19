@@ -3,6 +3,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import type { CartItem, Customer } from "@/lib/types";
 import { APP_NAME } from "@/lib/utils/constants";
 import { calculateInclusiveTaxes } from "@/lib/utils/tax";
+import { QRCodeCanvas } from "qrcode.react";
 
 interface A4InvoiceProps {
   invoiceNumber: string;
@@ -195,10 +196,20 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
         </div>
 
         {/* Footer Notes */}
-        <div className="border-t border-[#d1d5db] pt-8 mt-auto">
-          <div className="text-sm text-[#6b7280] text-center">
+        <div className="border-t border-[#d1d5db] pt-8 mt-auto flex justify-between items-end">
+          <div className="text-sm text-[#6b7280]">
             <p className="font-bold mb-1 text-[#374151]">Thank you for your business!</p>
             <p>If you have any questions regarding this invoice, please contact us at {phone}.</p>
+          </div>
+          
+          <div className="flex flex-col items-center ml-4">
+            <p className="text-xs font-bold text-[#374151] mb-1">Follow us on Instagram</p>
+            <p className="text-sm font-bold text-[#111827] mb-2">@7MIINUTES</p>
+            <QRCodeCanvas 
+              value="https://www.instagram.com/7miinutes?utm_source=qr&igsh=cnVnd3AzNWJoNnRm" 
+              size={70}
+              level="M"
+            />
           </div>
         </div>
       </div>
