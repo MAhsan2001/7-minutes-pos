@@ -63,7 +63,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           fontSize,
           width === "58mm" ? "receipt-58mm" : "receipt-80mm"
         )}
-        style={{ fontFamily: fontFamily || "'Courier New', Courier, monospace" }}
+        style={{ fontFamily: "'Courier New', Courier, monospace" }}
       >
         <style type="text/css" media="print">
           {`@page { margin: 0; size: 80mm auto; }`}
