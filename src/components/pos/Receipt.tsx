@@ -71,13 +71,10 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         </style>
         {/* Header */}
         <div className="text-center mb-4 flex flex-col items-center">
-          {showLogo && (
-            logo ? (
-              <img src={logo} alt="Logo" className="w-32 object-contain mb-2 grayscale" />
-            ) : (
-              <h1 className="font-bold text-3xl mb-1 tracking-widest">{APP_NAME.toUpperCase()}</h1>
-            )
+          {showLogo && logo && (
+            <img src={logo} alt="Logo" className="w-32 object-contain mb-2 grayscale bg-white" />
           )}
+          <h1 className="font-bold text-xl mb-1 tracking-widest uppercase">{bakeryName}</h1>
           <div className="text-xs leading-snug">
             <p>{address}</p>
             <p>Ph.No.: {phone}</p>
