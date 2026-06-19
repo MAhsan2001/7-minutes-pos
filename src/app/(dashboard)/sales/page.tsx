@@ -43,6 +43,7 @@ export default function SalesPage() {
   // Modal State
   const [selectedSale, setSelectedSale] = useState<DetailedSale | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [printMode, setPrintMode] = useState<"thermal" | "a4">("thermal");
   
   // Void/Refund State
   const [isActionMode, setIsActionMode] = useState<"void" | "refund" | null>(null);
@@ -260,8 +261,11 @@ export default function SalesPage() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = (mode: "thermal" | "a4") => {
+    setPrintMode(mode);
+    setTimeout(() => {
+      window.print();
+    }, 50);
   };
 
   const uniqueCashiers = Array.from(
@@ -565,11 +569,18 @@ export default function SalesPage() {
                       Share PDF
                     </button>
                     <button
-                      onClick={handlePrint}
+                      onClick={() => handlePrint("a4")}
+                      className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors shadow-sm"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print A4
+                    </button>
+                    <button
+                      onClick={() => handlePrint("thermal")}
                       className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary/90 transition-colors shadow-sm"
                     >
                       <Printer className="w-4 h-4" />
-                      Reprint Receipt
+                      Print Thermal
                     </button>
                   </div>
                 </div>
@@ -579,13 +590,15 @@ export default function SalesPage() {
         </Dialog.Root>
 
         {/* Hidden Thermal Receipt for Reprinting */}
-        {selectedSale && (
+        {selectedSale && printMode === "thermal" && (
           <ThermalReceipt
             ref={receiptRef}
             invoiceNumber={selectedSale.invoice_number}
             items={selectedSale.sale_items.map(i => ({
               product_id: i.product_id,
               product_name: i.product_name,
+              variant_name: i.variant_name || undefined,
+              addons: i.addons || undefined,
               quantity: i.quantity,
               unit_price: i.unit_price,
               image_url: undefined,
@@ -609,14 +622,16 @@ export default function SalesPage() {
           />
         )}
 
-        <div className="hidden print:block">
-          {selectedSale && (
+        <div className={printMode === "a4" ? "hidden print:block" : "hidden"}>
+          {selectedSale && printMode === "a4" && (
             <A4Invoice
               ref={a4InvoiceRef}
               invoiceNumber={selectedSale.invoice_number}
               items={selectedSale.sale_items.map(i => ({
                 product_id: i.product_id,
                 product_name: i.product_name,
+                variant_name: i.variant_name || undefined,
+                addons: i.addons || undefined,
                 quantity: i.quantity,
                 unit_price: i.unit_price,
                 image_url: undefined,
