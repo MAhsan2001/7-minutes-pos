@@ -67,7 +67,7 @@ export default function POSPage() {
   // Variant Modal State
   const [selectedProductForVariants, setSelectedProductForVariants] = useState<Product | null>(null);
   const [selectedVariantId, setSelectedVariantId] = useState<string>("");
-  const [selectedAddons, setSelectedAddons] = useState<Set<string>>(new Set());
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, number>>({});
 
   // Dynamic Bakery Settings for Receipt
   const [bakeryProfile, setBakeryProfile] = useState<{ name: string; address: string; phone: string; email?: string } | null>(null);
@@ -214,7 +214,7 @@ export default function POSPage() {
     if (hasActiveVariants || hasActiveAddons) {
       setSelectedProductForVariants(product);
       setSelectedVariantId("");
-      setSelectedAddons(new Set());
+      setSelectedAddons({});
       return;
     }
 
@@ -261,11 +261,15 @@ export default function POSPage() {
 
     const selectedAddonsData = [];
     const activeAddons = selectedProductForVariants.addons?.filter(a => a.is_active) || [];
-    for (const addonId of selectedAddons) {
-      const addon = activeAddons.find(a => a.id === addonId);
-      if (addon) {
-        selectedAddonsData.push({ id: addon.id, name: addon.name, price: addon.price });
-        finalPrice += addon.price;
+    for (const [addonId, qty] of Object.entries(selectedAddons)) {
+      if (qty > 0) {
+        const addon = activeAddons.find(a => a.id === addonId);
+        if (addon) {
+          for (let i = 0; i < qty; i++) {
+            selectedAddonsData.push({ id: addon.id, name: addon.name, price: addon.price });
+            finalPrice += addon.price;
+          }
+        }
       }
     }
 
@@ -1068,26 +1072,47 @@ export default function POSPage() {
                     <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Add-ons</h3>
                     <div className="grid grid-cols-1 gap-2">
                       {selectedProductForVariants.addons.filter(a => a.is_active).map(addon => {
-                        const isSelected = selectedAddons.has(addon.id);
+                        const qty = selectedAddons[addon.id] || 0;
                         return (
-                          <button
+                          <div
                             key={addon.id}
-                            onClick={() => {
-                              const next = new Set(selectedAddons);
-                              if (isSelected) next.delete(addon.id);
-                              else next.add(addon.id);
-                              setSelectedAddons(next);
-                            }}
                             className={cn(
-                              "flex justify-between items-center p-3 rounded-xl border-2 transition-all text-left",
-                              isSelected 
-                                ? "border-success bg-success/10 text-success" 
-                                : "border-border hover:border-success/50 text-foreground"
+                              "flex justify-between items-center p-3 rounded-xl border-2 transition-all",
+                              qty > 0 
+                                ? "border-success bg-success/10" 
+                                : "border-border"
                             )}
                           >
-                            <span className="font-semibold">+ {addon.name}</span>
-                            <span className="font-bold">{formatCurrency(addon.price)}</span>
-                          </button>
+                            <div className="flex flex-col">
+                              <span className={cn("font-semibold", qty > 0 ? "text-success" : "text-foreground")}>+ {addon.name}</span>
+                              <span className="font-bold text-muted-foreground text-sm">{formatCurrency(addon.price)}</span>
+                            </div>
+                            
+                            {qty === 0 ? (
+                              <button
+                                onClick={() => setSelectedAddons({ ...selectedAddons, [addon.id]: 1 })}
+                                className="px-4 py-1.5 bg-success/10 text-success hover:bg-success hover:text-white font-bold rounded-lg transition-colors"
+                              >
+                                Add
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-3 bg-background border border-border rounded-lg p-1">
+                                <button
+                                  onClick={() => setSelectedAddons({ ...selectedAddons, [addon.id]: qty - 1 })}
+                                  className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-foreground font-bold"
+                                >
+                                  -
+                                </button>
+                                <span className="font-bold text-success w-4 text-center">{qty}</span>
+                                <button
+                                  onClick={() => setSelectedAddons({ ...selectedAddons, [addon.id]: qty + 1 })}
+                                  className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-foreground font-bold"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
