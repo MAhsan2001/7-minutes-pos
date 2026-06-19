@@ -410,7 +410,7 @@ export default function POSPage() {
       }
 
       const canvas = await html2canvas(a4InvoiceRef.current, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
         windowWidth: 1024,
@@ -426,17 +426,19 @@ export default function POSPage() {
         wrapper.style.width = originalWidth;
       }
 
-      const imgData = canvas.toDataURL("image/png");
+      // Use JPEG with 0.75 quality to drastically reduce file size (from ~8MB to <1MB)
+      const imgData = canvas.toDataURL("image/jpeg", 0.75);
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "pt",
-        format: "a4"
+        format: "a4",
+        compress: true // Enable jsPDF compression
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
       
       const pdfBlob = pdf.output("blob");
       const file = new File([pdfBlob], `Invoice-${receiptSnapshot.invoiceNumber}.pdf`, { type: "application/pdf" });

@@ -181,10 +181,10 @@ export default function SalesPage() {
       }
 
       const canvas = await html2canvas(a4InvoiceRef.current, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         backgroundColor: "#ffffff",
-        windowWidth: 1024, // Force a desktop-sized window context so the A4 layout doesn't break on mobile
+        windowWidth: 1024,
       });
 
       // Restore original styles
@@ -198,17 +198,18 @@ export default function SalesPage() {
         wrapper.style.width = originalWidth;
       }
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.8);
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "pt",
-        format: "a4"
+        format: "a4",
+        compress: true
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
       
       const pdfBlob = pdf.output("blob");
       const file = new File([pdfBlob], `Invoice-${selectedSale.invoice_number}.pdf`, { type: "application/pdf" });
