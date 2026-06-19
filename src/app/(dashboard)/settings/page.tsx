@@ -366,12 +366,13 @@ export default function SettingsPage() {
                         <label className="text-sm font-medium text-foreground">Store Name</label>
                         <input
                           type="text"
-                          value={APP_NAME}
-                          disabled
-                          className="w-full px-4 py-2 bg-muted text-muted-foreground border border-border rounded-xl cursor-not-allowed"
+                          value={bakeryName}
+                          onChange={(e) => setBakeryName(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
-                          Store name is managed by the developer.
+                          This name will appear on all your receipts and invoices.
                         </p>
                       </div>
                       <div className="space-y-2">
