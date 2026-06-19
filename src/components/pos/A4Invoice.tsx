@@ -60,40 +60,40 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
           {`@page { margin: 10mm; size: auto; }`}
         </style>
         {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-gray-300 pb-6 mb-6">
+        <div className="flex justify-between items-start border-b-2 border-[#d1d5db] pb-6 mb-6">
           <div className="flex items-center gap-4">
             {showLogo && logo && (
               <img src={logo} alt="Logo" className="w-24 h-24 object-contain" />
             )}
             <div>
-              <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-2">{bakeryName}</h1>
-              <p className="text-sm text-gray-600">{address}</p>
-              <p className="text-sm text-gray-600">{phone}</p>
-              {email && <p className="text-sm text-gray-600">{email}</p>}
+              <h1 className="text-4xl font-bold tracking-tight text-[#111827] mb-2">{bakeryName}</h1>
+              <p className="text-sm text-[#4b5563]">{address}</p>
+              <p className="text-sm text-[#4b5563]">{phone}</p>
+              {email && <p className="text-sm text-[#4b5563]">{email}</p>}
             </div>
           </div>
           <div className="text-right">
-            <h2 className="text-4xl font-bold text-gray-300 uppercase tracking-widest mb-2">Invoice</h2>
-            <p className="text-sm font-medium text-gray-900">Invoice #: {invoiceNumber}</p>
-            <p className="text-sm text-gray-600">Date: {formatDate(date.toISOString())}</p>
-            <p className="text-sm text-gray-600">Time: {date.toLocaleTimeString()}</p>
-            <p className="text-sm text-gray-600">Cashier: {cashierName}</p>
+            <h2 className="text-4xl font-bold text-[#d1d5db] uppercase tracking-widest mb-2">Invoice</h2>
+            <p className="text-sm font-medium text-[#111827]">Invoice #: {invoiceNumber}</p>
+            <p className="text-sm text-[#4b5563]">Date: {formatDate(date.toISOString())}</p>
+            <p className="text-sm text-[#4b5563]">Time: {date.toLocaleTimeString()}</p>
+            <p className="text-sm text-[#4b5563]">Cashier: {cashierName}</p>
           </div>
         </div>
 
         {/* Bill To */}
         <div className="mb-8">
-          <h3 className="text-xs font-bold uppercase text-gray-500 mb-2">Bill To</h3>
+          <h3 className="text-xs font-bold uppercase text-[#6b7280] mb-2">Bill To</h3>
           {customer ? (
             <div>
-              <p className="text-lg font-bold text-gray-900">{customer.name}</p>
-              {customer.address && <p className="text-sm text-gray-600">{customer.address}</p>}
-              {customer.phone && <p className="text-sm text-gray-600">{customer.phone}</p>}
-              {customer.vat_number && <p className="text-sm text-gray-600">VAT: {customer.vat_number}</p>}
+              <p className="text-lg font-bold text-[#111827]">{customer.name}</p>
+              {customer.address && <p className="text-sm text-[#4b5563]">{customer.address}</p>}
+              {customer.phone && <p className="text-sm text-[#4b5563]">{customer.phone}</p>}
+              {customer.vat_number && <p className="text-sm text-[#4b5563]">VAT: {customer.vat_number}</p>}
             </div>
           ) : (
             <div>
-              <p className="text-lg font-bold text-gray-900">Walk-in Customer</p>
+              <p className="text-lg font-bold text-[#111827]">Walk-in Customer</p>
             </div>
           )}
         </div>
@@ -101,11 +101,11 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
         {/* Items Table */}
         <table className="w-full text-left mb-8 border-collapse">
           <thead>
-            <tr className="border-b-2 border-gray-900">
-              <th className="py-3 px-2 text-sm font-bold text-gray-900 uppercase">Item Description</th>
-              <th className="py-3 px-2 text-sm font-bold text-gray-900 uppercase text-center">Qty</th>
-              <th className="py-3 px-2 text-sm font-bold text-gray-900 uppercase text-right">Unit Price</th>
-              <th className="py-3 px-2 text-sm font-bold text-gray-900 uppercase text-right">Amount</th>
+            <tr className="border-b-2 border-[#111827]">
+              <th className="py-3 px-2 text-sm font-bold text-[#111827] uppercase">Item Description</th>
+              <th className="py-3 px-2 text-sm font-bold text-[#111827] uppercase text-center">Qty</th>
+              <th className="py-3 px-2 text-sm font-bold text-[#111827] uppercase text-right">Unit Price</th>
+              <th className="py-3 px-2 text-sm font-bold text-[#111827] uppercase text-right">Amount</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -116,26 +116,26 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
               
               return (
                 <Fragment key={idx}>
-                  <tr className="hover:bg-gray-50">
-                    <td className="py-4 px-2 text-sm text-gray-900 font-medium">
+                  <tr className="hover:bg-[#f9fafb]">
+                    <td className="py-4 px-2 text-sm text-[#111827] font-medium">
                       <div>{item.product_name}</div>
                       {item.variant_name && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-[#6b7280] mt-1">
                           ({item.variant_name})
                         </div>
                       )}
                     </td>
-                    <td className="py-4 px-2 text-sm text-gray-600 text-center">{item.quantity}</td>
-                    <td className="py-4 px-2 text-sm text-gray-600 text-right">
+                    <td className="py-4 px-2 text-sm text-[#4b5563] text-center">{item.quantity}</td>
+                    <td className="py-4 px-2 text-sm text-[#4b5563] text-right">
                       {formatCurrency(baseUnitPrice)}
                     </td>
-                    <td className="py-4 px-2 text-sm text-gray-900 font-medium text-right">
+                    <td className="py-4 px-2 text-sm text-[#111827] font-medium text-right">
                       {formatCurrency(baseAmount)}
                     </td>
                   </tr>
                   
                   {item.addons && item.addons.map((addon) => (
-                    <tr key={`${idx}-${addon.id}`} className="hover:bg-gray-50 text-gray-600">
+                    <tr key={`${idx}-${addon.id}`} className="hover:bg-[#f9fafb] text-[#4b5563]">
                       <td className="py-2 px-2 text-sm pl-6">
                         + {addon.name}
                       </td>
@@ -143,7 +143,7 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
                       <td className="py-2 px-2 text-sm text-right">
                         {formatCurrency(addon.price)}
                       </td>
-                      <td className="py-2 px-2 text-sm font-medium text-right text-gray-900">
+                      <td className="py-2 px-2 text-sm font-medium text-right text-[#111827]">
                         {formatCurrency(addon.price * item.quantity)}
                       </td>
                     </tr>
@@ -158,12 +158,12 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
         <div className="flex justify-end mb-12">
           <div className="w-1/2">
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between border-b border-gray-100 pb-2">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="text-gray-900 font-medium">{formatCurrency(totalAmount)}</span>
+              <div className="flex justify-between border-b border-[#f3f4f6] pb-2">
+                <span className="text-[#4b5563]">Subtotal:</span>
+                <span className="text-[#111827] font-medium">{formatCurrency(totalAmount)}</span>
               </div>
               {discountAmount > 0 && (
-                <div className="flex justify-between border-b border-gray-100 pb-2 text-green-600">
+                <div className="flex justify-between border-b border-[#f3f4f6] pb-2 text-[#16a34a]">
                   <span>Discount:</span>
                   <span className="font-medium">-{formatCurrency(discountAmount)}</span>
                 </div>
@@ -171,12 +171,12 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
               
               {/* Final Amount */}
               <div className="flex justify-between items-center pt-2">
-                <span className="text-lg font-bold text-gray-900">Total:</span>
-                <span className="text-2xl font-bold text-gray-900">{formatCurrency(finalTotal)}</span>
+                <span className="text-lg font-bold text-[#111827]">Total:</span>
+                <span className="text-2xl font-bold text-[#111827]">{formatCurrency(finalTotal)}</span>
               </div>
               <div className="flex justify-between pt-2">
-                <span className="text-gray-600">Amount Paid ({paymentMethod.toUpperCase()}):</span>
-                <span className="text-gray-900 font-medium">{formatCurrency(paidAmount)}</span>
+                <span className="text-[#4b5563]">Amount Paid ({paymentMethod.toUpperCase()}):</span>
+                <span className="text-[#111827] font-medium">{formatCurrency(paidAmount)}</span>
               </div>
               
               {(finalTotal - paidAmount) > 0 ? (
@@ -185,7 +185,7 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
                   <span>{formatCurrency(finalTotal - paidAmount)}</span>
                 </div>
               ) : (
-                <div className="flex justify-between pt-2 text-gray-600">
+                <div className="flex justify-between pt-2 text-[#4b5563]">
                   <span>Change:</span>
                   <span className="font-medium">{formatCurrency(changeAmount)}</span>
                 </div>
@@ -195,9 +195,9 @@ export const A4Invoice = forwardRef<HTMLDivElement, A4InvoiceProps>(
         </div>
 
         {/* Footer Notes */}
-        <div className="border-t border-gray-300 pt-8 mt-auto">
-          <div className="text-sm text-gray-500 text-center">
-            <p className="font-bold mb-1 text-gray-700">Thank you for your business!</p>
+        <div className="border-t border-[#d1d5db] pt-8 mt-auto">
+          <div className="text-sm text-[#6b7280] text-center">
+            <p className="font-bold mb-1 text-[#374151]">Thank you for your business!</p>
             <p>If you have any questions regarding this invoice, please contact us at {phone}.</p>
           </div>
         </div>
