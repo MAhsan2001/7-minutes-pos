@@ -338,7 +338,7 @@ export default function POSPage() {
             vat_amount: itemVat,
           };
         }),
-        p_shift_cashier_name: profile?.role === "admin" ? null : (selectedCashier || null),
+        p_shift_cashier_name: selectedCashier || null,
       };
 
       if (isOnline) {
@@ -365,7 +365,7 @@ export default function POSPage() {
         changeAmount,
         paymentMethod,
         date: new Date(),
-        shiftCashierName: profile?.role === "admin" ? null : (selectedCashier || null),
+        shiftCashierName: selectedCashier || null,
         customer: customers.find((c) => c.id === selectedCustomerId) || null,
       });
 
