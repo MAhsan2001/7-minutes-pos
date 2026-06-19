@@ -29,13 +29,16 @@ import {
   UserCircle,
   ChevronDown,
   FileText,
-  Share2
+  Share2,
+  LogOut,
+  Image as ImageIcon
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import { Receipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export default function POSPage() {
@@ -383,21 +386,22 @@ export default function POSPage() {
     }
   };
 
-  const handleWhatsAppShare = async () => {
+  const handleWhatsAppShare = async (format: 'pdf' | 'png') => {
     if (!receiptSnapshot || !a4InvoiceRef.current) return;
 
     try {
       setIsProcessing(true);
-      toast.info("Generating PDF invoice...");
+      toast.info(`Generating ${format.toUpperCase()} invoice...`);
 
+      // Temporarily show the A4Invoice for html2canvas
       const wrapper = a4InvoiceRef.current.parentElement;
-      const originalDisplay = wrapper ? wrapper.style.display : '';
-      const originalPosition = wrapper ? wrapper.style.position : '';
-      const originalLeft = wrapper ? wrapper.style.left : '';
-      const originalTop = wrapper ? wrapper.style.top : '';
-      const originalZIndex = wrapper ? wrapper.style.zIndex : '';
-      const originalWidth = wrapper ? wrapper.style.width : '';
-      
+      const originalDisplay = wrapper?.style.display || '';
+      const originalPosition = wrapper?.style.position || '';
+      const originalLeft = wrapper?.style.left || '';
+      const originalTop = wrapper?.style.top || '';
+      const originalZIndex = wrapper?.style.zIndex || '';
+      const originalWidth = wrapper?.style.width || '';
+
       if (wrapper) {
         wrapper.classList.remove('hidden');
         wrapper.style.display = 'block';
@@ -425,22 +429,40 @@ export default function POSPage() {
         wrapper.style.width = originalWidth;
       }
 
-      // Generate a high-quality PNG image instead of a PDF
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, "image/png");
-      });
+      let finalFile: File;
 
-      if (!blob) throw new Error("Failed to generate image blob");
+      if (format === 'pdf') {
+        const imgData = canvas.toDataURL("image/jpeg", 0.8);
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "pt",
+          format: "a4",
+          compress: true
+        });
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+        
+        const pdfBlob = pdf.output("blob");
+        finalFile = new File([pdfBlob], `Invoice-${receiptSnapshot.invoiceNumber}.pdf`, { type: "application/pdf" });
+      } else {
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, "image/png");
+        });
+        if (!blob) throw new Error("Failed to generate image blob");
+        finalFile = new File([blob], `Invoice-${receiptSnapshot.invoiceNumber}.png`, { type: "image/png" });
+      }
 
-      const file = new File([blob], `Invoice-${receiptSnapshot.invoiceNumber}.png`, { type: "image/png" });
       const text = `Here is your invoice from ${bakeryProfile?.name || APP_NAME}.\nInvoice #: ${receiptSnapshot.invoiceNumber}\nTotal: ${formatCurrency(receiptSnapshot.totalAmount - receiptSnapshot.discountAmount)}`;
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [finalFile] })) {
         try {
           await navigator.share({
             title: `Invoice ${receiptSnapshot.invoiceNumber}`,
             text: text,
-            files: [file]
+            files: [finalFile]
           });
           toast.success("Invoice shared successfully");
         } catch (error: any) {
@@ -450,19 +472,19 @@ export default function POSPage() {
           }
         }
       } else {
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(finalFile);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Invoice-${receiptSnapshot.invoiceNumber}.png`;
+        link.download = finalFile.name;
         link.click();
         URL.revokeObjectURL(url);
-        toast.success("Image downloaded!");
+        toast.success(`${format.toUpperCase()} downloaded!`);
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, "_blank");
       }
     } catch (error: any) {
-      console.error("Failed to generate PDF:", error);
-      toast.error(error.message || "Failed to generate PDF invoice");
+      console.error(`Failed to generate ${format.toUpperCase()}:`, error);
+      toast.error(error.message || `Failed to generate ${format.toUpperCase()} invoice`);
     } finally {
       setIsProcessing(false);
     }
@@ -1112,12 +1134,21 @@ export default function POSPage() {
                 </button>
                 <div className="flex gap-2">
                   <button
-                    onClick={handleWhatsAppShare}
+                    onClick={() => handleWhatsAppShare('png')}
                     className="flex-1 py-3 bg-[#25D366] text-white font-medium rounded-xl hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-2"
                   >
-                    <Share2 className="w-5 h-5" />
-                    WhatsApp
+                    <ImageIcon className="w-5 h-5" />
+                    Share PNG
                   </button>
+                  <button
+                    onClick={() => handleWhatsAppShare('pdf')}
+                    className="flex-1 py-3 bg-[#25D366] text-white font-medium rounded-xl hover:bg-[#20bd5a] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-5 h-5" />
+                    Share PDF
+                  </button>
+                </div>
+                <div className="flex gap-2">
                   <button
                     onClick={() => {
                       setPrintMode("a4");
@@ -1125,8 +1156,8 @@ export default function POSPage() {
                     }}
                     className="flex-1 py-3 bg-primary/10 text-primary font-medium rounded-xl hover:bg-primary/20 transition-colors flex items-center justify-center gap-2 border border-primary/20"
                   >
-                    <FileText className="w-5 h-5" />
-                    A4 Invoice
+                    <Printer className="w-5 h-5" />
+                    Print A4
                   </button>
                 </div>
                 <button

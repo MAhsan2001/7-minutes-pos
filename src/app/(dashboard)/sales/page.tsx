@@ -12,6 +12,7 @@ import { SALE_STATUS_CONFIG, APP_NAME } from "@/lib/utils/constants";
 import { Receipt as ThermalReceipt } from "@/components/pos/Receipt";
 import { A4Invoice } from "@/components/pos/A4Invoice";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import {
   Search,
   Receipt,
@@ -23,7 +24,8 @@ import {
   Ban,
   CornerUpLeft,
   AlertTriangle,
-  Share2
+  Share2,
+  Image as ImageIcon
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 
@@ -153,22 +155,22 @@ export default function SalesPage() {
     }
   };
 
-  const handleWhatsAppShare = async () => {
+  const handleWhatsAppShare = async (format: 'pdf' | 'png') => {
     if (!selectedSale || !a4InvoiceRef.current) return;
 
     try {
       setIsProcessing(true);
-      toast.info("Generating PDF invoice...");
+      toast.info(`Generating ${format.toUpperCase()} invoice...`);
 
-      // Temporarily make the A4 Invoice visible off-screen for html2canvas
+      // Temporarily show the A4Invoice for html2canvas
       const wrapper = a4InvoiceRef.current.parentElement;
-      const originalDisplay = wrapper ? wrapper.style.display : '';
-      const originalPosition = wrapper ? wrapper.style.position : '';
-      const originalLeft = wrapper ? wrapper.style.left : '';
-      const originalTop = wrapper ? wrapper.style.top : '';
-      const originalZIndex = wrapper ? wrapper.style.zIndex : '';
-      const originalWidth = wrapper ? wrapper.style.width : '';
-      
+      const originalDisplay = wrapper?.style.display || '';
+      const originalPosition = wrapper?.style.position || '';
+      const originalLeft = wrapper?.style.left || '';
+      const originalTop = wrapper?.style.top || '';
+      const originalZIndex = wrapper?.style.zIndex || '';
+      const originalWidth = wrapper?.style.width || '';
+
       if (wrapper) {
         wrapper.classList.remove('hidden');
         wrapper.style.display = 'block';
@@ -176,7 +178,7 @@ export default function SalesPage() {
         wrapper.style.left = '-9999px';
         wrapper.style.top = '0';
         wrapper.style.zIndex = '-100';
-        wrapper.style.width = '794px'; // Standard A4 width in pixels at 96 DPI
+        wrapper.style.width = '794px';
       }
 
       const canvas = await html2canvas(a4InvoiceRef.current, {
@@ -197,22 +199,40 @@ export default function SalesPage() {
         wrapper.style.width = originalWidth;
       }
 
-      // Generate a high-quality PNG image instead of a PDF
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, "image/png");
-      });
+      let finalFile: File;
 
-      if (!blob) throw new Error("Failed to generate image blob");
+      if (format === 'pdf') {
+        const imgData = canvas.toDataURL("image/jpeg", 0.8);
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "pt",
+          format: "a4",
+          compress: true
+        });
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+        
+        const pdfBlob = pdf.output("blob");
+        finalFile = new File([pdfBlob], `Invoice-${selectedSale.invoice_number}.pdf`, { type: "application/pdf" });
+      } else {
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, "image/png");
+        });
+        if (!blob) throw new Error("Failed to generate image blob");
+        finalFile = new File([blob], `Invoice-${selectedSale.invoice_number}.png`, { type: "image/png" });
+      }
 
-      const file = new File([blob], `Invoice-${selectedSale.invoice_number}.png`, { type: "image/png" });
       const text = `Here is your invoice from ${bakeryProfile?.name || APP_NAME}.\nInvoice #: ${selectedSale.invoice_number}\nTotal: ${formatCurrency(selectedSale.total_amount)}`;
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [finalFile] })) {
         try {
           await navigator.share({
             title: `Invoice ${selectedSale.invoice_number}`,
             text: text,
-            files: [file]
+            files: [finalFile]
           });
           toast.success("Invoice shared successfully");
         } catch (error: any) {
@@ -222,20 +242,19 @@ export default function SalesPage() {
           }
         }
       } else {
-        // Fallback: Download Image and open WhatsApp web
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(finalFile);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `Invoice-${selectedSale.invoice_number}.png`;
+        link.download = finalFile.name;
         link.click();
         URL.revokeObjectURL(url);
-        toast.success("Image downloaded!");
+        toast.success(`${format.toUpperCase()} downloaded!`);
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, "_blank");
       }
     } catch (error: any) {
-      console.error("Failed to generate PDF:", error);
-      toast.error(error.message || "Failed to generate PDF invoice");
+      console.error(`Failed to generate ${format.toUpperCase()}:`, error);
+      toast.error(error.message || `Failed to generate ${format.toUpperCase()} invoice`);
     } finally {
       setIsProcessing(false);
     }
@@ -532,11 +551,18 @@ export default function SalesPage() {
                   
                   <div className="flex gap-2 ml-auto">
                     <button
-                      onClick={handleWhatsAppShare}
+                      onClick={() => handleWhatsAppShare('png')}
                       className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#20bd5a] transition-colors shadow-sm"
                     >
-                      <Share2 className="w-4 h-4" />
-                      WhatsApp
+                      <ImageIcon className="w-4 h-4" />
+                      Share PNG
+                    </button>
+                    <button
+                      onClick={() => handleWhatsAppShare('pdf')}
+                      className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#20bd5a] transition-colors shadow-sm"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Share PDF
                     </button>
                     <button
                       onClick={handlePrint}
