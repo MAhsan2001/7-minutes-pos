@@ -25,6 +25,8 @@ export type PromotionTargetType = "all" | "category" | "product" | "combo";
 
 export interface ComboItem {
   product_id: string;
+  variant_id?: string | null;
+  required_addons?: string[];
   quantity: number;
 }
 

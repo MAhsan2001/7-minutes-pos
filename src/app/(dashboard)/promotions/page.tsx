@@ -6,7 +6,7 @@ import { usePermission } from "@/hooks/use-permission";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
-import type { Promotion, Category, Product } from "@/lib/types";
+import type { Promotion, Category, Product, ComboItem } from "@/lib/types";
 import {
   Plus,
   Search,
@@ -62,7 +62,7 @@ export default function PromotionsPage() {
     start_time: "",
     end_time: "",
     days_of_week: [] as number[],
-    combo_items: [] as { product_id: string; quantity: number }[],
+    combo_items: [] as ComboItem[],
     is_active: true,
   });
 
@@ -78,7 +78,12 @@ export default function PromotionsPage() {
       const [promotionsRes, categoriesRes, productsRes] = await Promise.all([
         supabase.from("promotions").select("*").order("created_at", { ascending: false }),
         supabase.from("categories").select("*").eq("is_active", true),
-        supabase.from("products").select("id, name").eq("is_active", true)
+        supabase.from("products").select(`
+          id, 
+          name,
+          variants:product_variants(*),
+          addons:product_addons(*)
+        `).eq("is_active", true)
       ]);
 
       if (promotionsRes.error) throw promotionsRes.error;
@@ -487,45 +492,100 @@ export default function PromotionsPage() {
                     {formData.combo_items.length === 0 && (
                       <p className="text-xs text-muted-foreground text-center py-2">Click + Add Item to build your combo.</p>
                     )}
-                    {formData.combo_items.map((item, idx) => (
-                      <div key={idx} className="flex gap-2 items-center">
-                        <select
-                          required
-                          value={item.product_id}
-                          onChange={(e) => {
-                            const newItems = [...formData.combo_items];
-                            newItems[idx].product_id = e.target.value;
-                            setFormData({ ...formData, combo_items: newItems });
-                          }}
-                          className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
-                        >
-                          <option value="">Select product...</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                        </select>
-                        <input
-                          type="number"
-                          required
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => {
-                            const newItems = [...formData.combo_items];
-                            newItems[idx].quantity = Number(e.target.value);
-                            setFormData({ ...formData, combo_items: newItems });
-                          }}
-                          className="w-20 px-3 py-2 bg-background border border-border rounded-lg text-sm text-center"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newItems = formData.combo_items.filter((_, i) => i !== idx);
-                            setFormData({ ...formData, combo_items: newItems });
-                          }}
-                          className="p-2 text-destructive hover:bg-destructive/10 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    {formData.combo_items.map((item, idx) => {
+                      const selectedProduct = products.find(p => p.id === item.product_id);
+                      const hasVariants = selectedProduct?.variants && selectedProduct.variants.length > 0;
+                      const hasAddons = selectedProduct?.addons && selectedProduct.addons.length > 0;
+
+                      return (
+                      <div key={idx} className="flex flex-col gap-2 p-3 bg-background border border-border rounded-lg relative">
+                        <div className="flex gap-2 items-center">
+                          <select
+                            required
+                            value={item.product_id}
+                            onChange={(e) => {
+                              const newItems = [...formData.combo_items];
+                              newItems[idx] = { product_id: e.target.value, quantity: newItems[idx].quantity }; // Reset variants/addons when product changes
+                              setFormData({ ...formData, combo_items: newItems });
+                            }}
+                            className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-sm"
+                          >
+                            <option value="">Select product...</option>
+                            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const newItems = [...formData.combo_items];
+                              newItems[idx].quantity = Number(e.target.value);
+                              setFormData({ ...formData, combo_items: newItems });
+                            }}
+                            className="w-20 px-3 py-2 bg-background border border-border rounded-lg text-sm text-center"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newItems = formData.combo_items.filter((_, i) => i !== idx);
+                              setFormData({ ...formData, combo_items: newItems });
+                            }}
+                            className="p-2 text-destructive hover:bg-destructive/10 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {selectedProduct && (hasVariants || hasAddons) && (
+                          <div className="pl-2 mt-1 border-l-2 border-purple-500/20 space-y-2">
+                            {hasVariants && (
+                              <div className="flex gap-2 items-center">
+                                <label className="text-xs text-muted-foreground w-16">Variant:</label>
+                                <select 
+                                  value={item.variant_id || ""}
+                                  onChange={(e) => {
+                                    const newItems = [...formData.combo_items];
+                                    newItems[idx].variant_id = e.target.value || null;
+                                    setFormData({ ...formData, combo_items: newItems });
+                                  }}
+                                  className="flex-1 px-2 py-1 bg-card border border-border rounded text-xs"
+                                >
+                                  <option value="">Any Variant</option>
+                                  {selectedProduct.variants!.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                                </select>
+                              </div>
+                            )}
+                            {hasAddons && (
+                              <div className="flex gap-2 items-start">
+                                <label className="text-xs text-muted-foreground w-16 pt-1">Addons:</label>
+                                <div className="flex flex-wrap gap-2 flex-1">
+                                  {selectedProduct.addons!.map(a => (
+                                    <label key={a.id} className="flex items-center gap-1 text-xs bg-muted/50 px-2 py-1 rounded">
+                                      <input 
+                                        type="checkbox"
+                                        checked={(item.required_addons || []).includes(a.id)}
+                                        onChange={(e) => {
+                                          const newItems = [...formData.combo_items];
+                                          const currentAddons = newItems[idx].required_addons || [];
+                                          if (e.target.checked) {
+                                            newItems[idx].required_addons = [...currentAddons, a.id];
+                                          } else {
+                                            newItems[idx].required_addons = currentAddons.filter(id => id !== a.id);
+                                          }
+                                          setFormData({ ...formData, combo_items: newItems });
+                                        }}
+                                        className="w-3 h-3 rounded border-border"
+                                      />
+                                      {a.name}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )}
 

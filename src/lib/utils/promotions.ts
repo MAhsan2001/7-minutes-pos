@@ -49,8 +49,10 @@ export function calculatePromotions(
   });
 
   // Track remaining quantity of items that can be discounted to avoid double dipping
-  const remainingItemQuantities = new Map<string, number>();
-  cartItems.forEach(item => remainingItemQuantities.set(item.product_id, item.quantity));
+  const cartTrackers = cartItems.map(item => ({
+    item,
+    remainingQty: item.quantity
+  }));
 
   // Sort promotions by best value (BOGO first, then percentage, then fixed)
   const sortedPromos = [...activePromotions].sort((a, b) => {
@@ -67,27 +69,49 @@ export function calculatePromotions(
 
     if (promo.target_type === "combo" && promo.combo_items && promo.combo_items.length > 0) {
       // Evaluate combo deals
-      // How many combos can we make?
+      // Find matching items for each combo requirement
+      const reqMatches = promo.combo_items.map(reqItem => {
+        // Find ALL cart trackers that satisfy this requirement
+        const matchingTrackers = cartTrackers.filter((tracker) => {
+          if (tracker.remainingQty <= 0) return false;
+          if (tracker.item.product_id !== reqItem.product_id) return false;
+          if (reqItem.variant_id && tracker.item.variant_id !== reqItem.variant_id) return false;
+          if (reqItem.required_addons && reqItem.required_addons.length > 0) {
+            const cartAddonIds = tracker.item.addons?.map(a => a.id) || [];
+            const hasAllAddons = reqItem.required_addons.every(a => cartAddonIds.includes(a));
+            if (!hasAllAddons) return false;
+          }
+          return true;
+        });
+
+        const totalAvailableQty = matchingTrackers.reduce((sum, t) => sum + t.remainingQty, 0);
+        return { reqItem, matchingTrackers, totalAvailableQty };
+      });
+
       let maxCombos = Infinity;
-      for (const reqItem of promo.combo_items) {
-        const remainingQty = remainingItemQuantities.get(reqItem.product_id) || 0;
-        const possibleCombos = Math.floor(remainingQty / reqItem.quantity);
-        if (possibleCombos < maxCombos) {
-          maxCombos = possibleCombos;
-        }
+      for (const match of reqMatches) {
+        const possible = Math.floor(match.totalAvailableQty / match.reqItem.quantity);
+        if (possible < maxCombos) maxCombos = possible;
       }
 
       if (maxCombos > 0) {
         let regularPriceForCombos = 0;
-        for (const reqItem of promo.combo_items) {
-          const product = products.find(p => p.id === reqItem.product_id);
-          if (product) {
-            affectedItems.push(product.name);
-            regularPriceForCombos += product.price * reqItem.quantity * maxCombos;
+        // Deduct exactly `reqItem.quantity * maxCombos` from the matching trackers
+        for (const match of reqMatches) {
+          let neededToDeduct = match.reqItem.quantity * maxCombos;
+          for (const tracker of match.matchingTrackers) {
+            if (neededToDeduct <= 0) break;
+            const deduct = Math.min(tracker.remainingQty, neededToDeduct);
             
-            // Deduct the used quantities
-            const currentQty = remainingItemQuantities.get(reqItem.product_id) || 0;
-            remainingItemQuantities.set(reqItem.product_id, currentQty - (reqItem.quantity * maxCombos));
+            // Add the exact unit price of THIS specific cart item (including variant and addons)
+            regularPriceForCombos += (deduct * tracker.item.unit_price);
+            
+            tracker.remainingQty -= deduct;
+            neededToDeduct -= deduct;
+            
+            if (!affectedItems.includes(tracker.item.product_name)) {
+              affectedItems.push(tracker.item.product_name);
+            }
           }
         }
 
@@ -98,10 +122,10 @@ export function calculatePromotions(
       }
     } else {
       // Standard targets
-      for (const item of cartItems) {
-        const remainingQty = remainingItemQuantities.get(item.product_id) || 0;
-        if (remainingQty <= 0) continue;
-
+      for (const tracker of cartTrackers) {
+        if (tracker.remainingQty <= 0) continue;
+        const item = tracker.item;
+        
         const product = products.find(p => p.id === item.product_id);
         if (!product) continue;
 
@@ -110,23 +134,25 @@ export function calculatePromotions(
           (promo.target_type === "product" && promo.target_id === item.product_id) ||
           (promo.target_type === "category" && promo.target_id === product.category_id);
 
-        if (matchesTarget && remainingQty >= promo.min_quantity) {
-          affectedItems.push(item.product_name);
+        if (matchesTarget && tracker.remainingQty >= promo.min_quantity) {
+          if (!affectedItems.includes(item.product_name)) {
+            affectedItems.push(item.product_name);
+          }
           
           if (promo.type === "bogo") {
             const freeItemsValue = promo.value; 
             const paidItemsRequired = promo.min_quantity; 
             const bundleSize = paidItemsRequired + freeItemsValue;
-            const bundles = Math.floor(remainingQty / bundleSize);
+            const bundles = Math.floor(tracker.remainingQty / bundleSize);
             
             if (bundles > 0) {
               const freeQty = bundles * freeItemsValue;
               promoDiscount += freeQty * item.unit_price;
-              remainingItemQuantities.set(item.product_id, remainingQty - (bundles * bundleSize));
+              tracker.remainingQty -= (bundles * bundleSize);
             }
           } 
           else if (promo.type === "bundle_fixed_price") {
-            const bundles = Math.floor(remainingQty / promo.min_quantity);
+            const bundles = Math.floor(tracker.remainingQty / promo.min_quantity);
             if (bundles > 0) {
               const itemsInBundles = bundles * promo.min_quantity;
               const regularPriceForBundles = itemsInBundles * item.unit_price;
@@ -134,19 +160,19 @@ export function calculatePromotions(
               
               if (regularPriceForBundles > bundlePrice) {
                 promoDiscount += (regularPriceForBundles - bundlePrice);
-                remainingItemQuantities.set(item.product_id, remainingQty - itemsInBundles);
+                tracker.remainingQty -= itemsInBundles;
               }
             }
           }
           else if (promo.type === "discount_percentage") {
             const discountPerItem = item.unit_price * (promo.value / 100);
-            promoDiscount += discountPerItem * remainingQty;
-            remainingItemQuantities.set(item.product_id, 0); 
+            promoDiscount += discountPerItem * tracker.remainingQty;
+            tracker.remainingQty = 0; 
           } 
           else if (promo.type === "discount_fixed") {
             const discountPerItem = Math.min(item.unit_price, promo.value);
-            promoDiscount += discountPerItem * remainingQty;
-            remainingItemQuantities.set(item.product_id, 0); 
+            promoDiscount += discountPerItem * tracker.remainingQty;
+            tracker.remainingQty = 0; 
           }
         }
       }
